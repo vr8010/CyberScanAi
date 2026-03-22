@@ -147,6 +147,8 @@ class ScanService:
             )
 
             # ── Step 5: Update user counters ──────────────────────────────
+            user_email = user.email          # save before session closes
+            user_name = user.full_name or ""
             user.scans_today += 1
             user.total_scans += 1
             user.last_scan_date = datetime.now(timezone.utc)
@@ -158,18 +160,26 @@ class ScanService:
             if settings.SMTP_USER:
                 try:
                     from app.services.pdf_generator import generate_pdf_report
-                    from app.services.email_service import send_report_email
                     pdf_bytes = generate_pdf_report(scan)
-                    await send_report_email(
-                        to_email=user.email,
-                        to_name=user.full_name or "",
-                        target_url=scan.target_url,
-                        risk_score=risk_score,
-                        pdf_bytes=pdf_bytes,
-                        scan_id=scan.id,
-                    )
-                except Exception as email_err:
-                    logger.warning("email_report_failed", error=str(email_err))
+                    logger.info("pdf_generated", scan_id=scan_id, size=len(pdf_bytes))
+                except Exception as pdf_err:
+                    logger.error("pdf_generation_failed", scan_id=scan_id, error=str(pdf_err))
+                    pdf_bytes = None
+
+                if pdf_bytes:
+                    try:
+                        from app.services.email_service import send_report_email
+                        sent = await send_report_email(
+                            to_email=user_email,
+                            to_name=user_name,
+                            target_url=scan.target_url,
+                            risk_score=risk_score,
+                            pdf_bytes=pdf_bytes,
+                            scan_id=scan.id,
+                        )
+                        logger.info("email_result", scan_id=scan_id, sent=sent, to=user_email)
+                    except Exception as email_err:
+                        logger.error("email_send_failed", scan_id=scan_id, error=str(email_err), to=user_email)
 
             logger.info(
                 "scan_complete",
