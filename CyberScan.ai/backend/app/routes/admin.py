@@ -22,13 +22,17 @@ router = APIRouter()
 @router.post("/bootstrap")
 async def bootstrap_admin(
     secret: str = Query(...),
+    email: str = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    """Make the first registered user an admin. Requires BOOTSTRAP_SECRET env var."""
+    """Make a user admin by email (or first user if no email). Requires BOOTSTRAP_SECRET."""
     from app.core.config import settings
     if not settings.BOOTSTRAP_SECRET or secret != settings.BOOTSTRAP_SECRET:
         raise HTTPException(status_code=403, detail="Invalid secret")
-    result = await db.execute(select(User).order_by(User.created_at.asc()).limit(1))
+    if email:
+        result = await db.execute(select(User).where(User.email == email))
+    else:
+        result = await db.execute(select(User).order_by(User.created_at.asc()).limit(1))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="No users found")
@@ -218,19 +222,7 @@ async def send_custom_email(
     data: EmailRequest,
     _: User = Depends(get_current_admin),
 ):
-    from app.core.config import settings
-    import aiosmtplib
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-
-    if not settings.SMTP_USER:
-        raise HTTPException(status_code=503, detail="SMTP not configured")
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = data.subject
-    msg["From"]    = f"CyberScan.Ai Admin <{settings.FROM_EMAIL}>"
-    msg["To"]      = data.to_email
-
+    from app.services.email_service import _send_via_resend
     html = f"""
     <html><body style="font-family:Arial,sans-serif;padding:20px;background:#F8FAFC;">
       <div style="max-width:600px;margin:0 auto;background:white;border-radius:12px;padding:32px;">
@@ -241,16 +233,7 @@ async def send_custom_email(
       </div>
     </body></html>
     """
-    msg.attach(MIMEText(html, "html"))
-
-    await aiosmtplib.send(
-        msg,
-        hostname=settings.SMTP_HOST,
-        port=settings.SMTP_PORT,
-        username=settings.SMTP_USER,
-        password=settings.SMTP_PASSWORD,
-        start_tls=True,
-    )
+    await _send_via_resend(to_email=data.to_email, subject=data.subject, html=html)
     return {"message": f"Email sent to {data.to_email}"}
 
 
@@ -268,7 +251,7 @@ async def get_settings(_: User = Depends(get_current_admin)):
         "free_scans_per_day": settings.FREE_SCANS_PER_DAY,
         "pro_scans_per_day": settings.PRO_SCANS_PER_DAY,
         "environment": settings.ENVIRONMENT,
-        "smtp_configured": bool(settings.SMTP_USER),
+        "smtp_configured": bool(settings.RESEND_API_KEY),
         "groq_configured": bool(settings.GROQ_API_KEY),
     }
 
