@@ -8,27 +8,27 @@ services:
     envVars:
       - key: ENVIRONMENT
         value: production
-      - key: SECRET_KEY
-        generateValue: true
       - key: DATABASE_URL
         value: sqlite+aiosqlite:///./cyberscan.db
-      - key: GROQ_API_KEY
-        sync: false
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
         value: 587
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
       - key: FROM_EMAIL
-        sync: false
+        value: creaftercode@gmail.com
       - key: FRONTEND_URL
-        sync: false
+        value: https://cyberscan-ai-app.netlify.app
+      - key: CORS_ORIGINS
+        value: '["https://cyberscan-ai-app.netlify.app"]'
       - key: FREE_SCANS_PER_DAY
         value: 999
       - key: PRO_SCANS_PER_DAY
         value: 999
-      - key: CORS_ORIGINS
+      - key: SECRET_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
         sync: false

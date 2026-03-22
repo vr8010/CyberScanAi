@@ -54,8 +54,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Trusted hosts (production)
-if settings.ENVIRONMENT == "production":
+# Trusted hosts — only restrict if explicitly configured (not wildcard)
+if settings.ENVIRONMENT == "production" and settings.ALLOWED_HOSTS != ["*"]:
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=settings.ALLOWED_HOSTS,

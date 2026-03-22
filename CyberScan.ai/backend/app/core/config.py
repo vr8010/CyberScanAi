@@ -36,8 +36,8 @@ class Settings(BaseSettings):
     FROM_EMAIL: str = "noreply@securescout.io"
 
     # ── CORS / Security ───────────────────────────────────────────────
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:80", "https://cyberscan-ai.netlify.app"]
-    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1", "securescout.io"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:80", "https://cyberscan-ai-app.netlify.app"]
+    ALLOWED_HOSTS: List[str] = ["*"]
 
     # ── Scan Limits ───────────────────────────────────────────────────
     FREE_SCANS_PER_DAY: int = 999
