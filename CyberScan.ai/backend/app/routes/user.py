@@ -81,13 +81,12 @@ async def get_user_stats(
 async def test_email(current_user: User = Depends(get_current_user)):
     """Debug: test email + PDF pipeline and return exact error."""
     import traceback
-    result = {"user_email": current_user.email, "steps": {}}
+    from app.core.config import settings
+    result = {"user_email": current_user.email, "resend_configured": bool(settings.RESEND_API_KEY), "steps": {}}
 
     # Step 1: PDF
     try:
         from app.services.pdf_generator import generate_pdf_report
-        from app.models.models import ScanResult
-        # Create a fake scan object
         class FakeScan:
             target_url = "https://example.com"
             risk_score = 42.0
@@ -113,7 +112,7 @@ async def test_email(current_user: User = Depends(get_current_user)):
         result["steps"]["pdf"] = f"FAILED: {traceback.format_exc()}"
         return result
 
-    # Step 2: Email
+    # Step 2: Email via Resend
     try:
         from app.services.email_service import send_report_email
         sent = await send_report_email(

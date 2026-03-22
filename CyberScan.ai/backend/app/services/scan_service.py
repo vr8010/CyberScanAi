@@ -157,7 +157,7 @@ class ScanService:
             await self.db.refresh(scan)
 
             # ── Step 6: Send email report ─────────────────────────────────
-            if settings.SMTP_USER:
+            if settings.RESEND_API_KEY:
                 try:
                     from app.services.pdf_generator import generate_pdf_report
                     pdf_bytes = generate_pdf_report(scan)
