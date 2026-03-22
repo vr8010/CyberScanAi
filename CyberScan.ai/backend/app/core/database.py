@@ -6,12 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
-# Use SQLite for local dev if DATABASE_URL is not a real postgres URL
+# Use DATABASE_URL as-is — no SQLite fallback in production
 _db_url = settings.DATABASE_URL
-if "localhost" in _db_url and "postgresql" in _db_url:
-    # Fall back to SQLite so no Postgres install is needed locally
-    _db_url = "sqlite+aiosqlite:///./securescout.db"
-
 _is_sqlite = _db_url.startswith("sqlite")
 
 # Async engine for FastAPI
