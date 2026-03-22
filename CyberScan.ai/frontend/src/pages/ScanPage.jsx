@@ -23,24 +23,45 @@ export default function ScanPage() {
   const handleScan = async (url) => {
     setIsScanning(true)
     try {
-      // Start scan — returns immediately with pending status
-      const { data } = await scanAPI.startScan(url)
-      const scanId = data.id
+      // Wake up Render if sleeping (retry up to 3x with delay)
+      let startResp
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          startResp = await scanAPI.startScan(url)
+          break
+        } catch (err) {
+          // 502/503 = Render waking up, wait and retry
+          const status = err.response?.status
+          if ((status === 502 || status === 503 || !status) && attempt < 2) {
+            await new Promise(r => setTimeout(r, 5000))
+            continue
+          }
+          throw err
+        }
+      }
 
-      // Poll until completed or failed (max 90s)
-      let scan = data
-      const maxAttempts = 30
-      for (let i = 0; i < maxAttempts; i++) {
+      const scanId = startResp.data.id
+
+      // Poll until completed or failed (max 2 min)
+      let scan = startResp.data
+      for (let i = 0; i < 40; i++) {
         if (scan.status === 'completed' || scan.status === 'failed') break
         await new Promise(r => setTimeout(r, 3000))
-        const { data: polled } = await scanAPI.getScan(scanId)
-        scan = polled
+        try {
+          const { data: polled } = await scanAPI.getScan(scanId)
+          scan = polled
+        } catch { /* ignore transient poll errors */ }
       }
 
       await refreshUser()
 
       if (scan.status === 'failed') {
         toast.error('Scan failed. Please try again.')
+        return
+      }
+
+      if (scan.status !== 'completed') {
+        toast.error('Scan timed out. Please try again.')
         return
       }
 

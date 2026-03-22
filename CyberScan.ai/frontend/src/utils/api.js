@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 60000, // 60s — scans can take time
+  timeout: 90000, // 90s — accounts for Render cold start + scan time
   headers: { 'Content-Type': 'application/json' },
 })
 
