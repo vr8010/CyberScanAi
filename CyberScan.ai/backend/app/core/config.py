@@ -28,12 +28,9 @@ class Settings(BaseSettings):
     # ── Groq (Free AI) ────────────────────────────────────────────────
     GROQ_API_KEY: str = ""
 
-    # ── Resend (Email API) ────────────────────────────────────────────
-    RESEND_API_KEY: str = ""
-
-    # ── Email (SMTP — legacy, kept for reference) ─────────────────────
+    # ── Email (SMTP) ─────────────────────────────────────────────────
     SMTP_HOST: str = "smtp.gmail.com"
-    SMTP_PORT: int = 587
+    SMTP_PORT: int = 465
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     FROM_EMAIL: str = "noreply@cyberscan.ai"

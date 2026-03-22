@@ -82,7 +82,7 @@ async def test_email(current_user: User = Depends(get_current_user)):
     """Debug: test email + PDF pipeline and return exact error."""
     import traceback
     from app.core.config import settings
-    result = {"user_email": current_user.email, "resend_configured": bool(settings.RESEND_API_KEY), "steps": {}}
+    result = {"user_email": current_user.email, "smtp_configured": bool(settings.SMTP_USER), "steps": {}}
 
     # Step 1: PDF
     try:
