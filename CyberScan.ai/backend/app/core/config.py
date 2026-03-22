@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # ── Groq (Free AI) ────────────────────────────────────────────────
     GROQ_API_KEY: str = ""
 
+    # ── Admin Bootstrap ───────────────────────────────────────────────
+    BOOTSTRAP_SECRET: str = ""
+
     # ── Email (Resend API — HTTP-based, works on Render free tier) ───
     RESEND_API_KEY: str = ""
     FROM_EMAIL: str = "onboarding@resend.dev"

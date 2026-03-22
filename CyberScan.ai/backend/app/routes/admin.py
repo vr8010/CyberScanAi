@@ -17,6 +17,26 @@ from app.auth.jwt_handler import get_current_admin
 router = APIRouter()
 
 
+# ── Bootstrap (one-time admin setup) ─────────────────────────────────────────
+
+@router.post("/bootstrap")
+async def bootstrap_admin(
+    secret: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Make the first registered user an admin. Requires BOOTSTRAP_SECRET env var."""
+    from app.core.config import settings
+    if not settings.BOOTSTRAP_SECRET or secret != settings.BOOTSTRAP_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid secret")
+    result = await db.execute(select(User).order_by(User.created_at.asc()).limit(1))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="No users found")
+    user.is_admin = True
+    await db.commit()
+    return {"message": f"{user.email} is now admin"}
+
+
 # ── Stats ─────────────────────────────────────────────────────────────────────
 
 @router.get("/stats", response_model=AdminStats)
