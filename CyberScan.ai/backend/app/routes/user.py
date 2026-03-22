@@ -75,3 +75,57 @@ async def get_user_stats(
         "average_risk_score": round(float(avg_risk), 1) if avg_risk else None,
         "high_risk_scans": high_risk_count,
     }
+
+
+@router.get("/test-email")
+async def test_email(current_user: User = Depends(get_current_user)):
+    """Debug: test email + PDF pipeline and return exact error."""
+    import traceback
+    result = {"user_email": current_user.email, "steps": {}}
+
+    # Step 1: PDF
+    try:
+        from app.services.pdf_generator import generate_pdf_report
+        from app.models.models import ScanResult
+        # Create a fake scan object
+        class FakeScan:
+            target_url = "https://example.com"
+            risk_score = 42.0
+            overall_severity = "medium"
+            summary = "Test scan"
+            vulnerabilities = []
+            raw_findings = []
+            ssl_valid = True
+            ssl_expiry_days = 90
+            server_header = None
+            response_time_ms = 200
+            critical_count = 0
+            high_count = 0
+            medium_count = 1
+            low_count = 2
+            id = "test-123"
+            from datetime import datetime, timezone
+            created_at = datetime.now(timezone.utc)
+
+        pdf_bytes = generate_pdf_report(FakeScan())
+        result["steps"]["pdf"] = f"OK - {len(pdf_bytes)} bytes"
+    except Exception as e:
+        result["steps"]["pdf"] = f"FAILED: {traceback.format_exc()}"
+        return result
+
+    # Step 2: Email
+    try:
+        from app.services.email_service import send_report_email
+        sent = await send_report_email(
+            to_email=current_user.email,
+            to_name=current_user.full_name or "",
+            target_url="https://example.com",
+            risk_score=42.0,
+            pdf_bytes=pdf_bytes,
+            scan_id="test-123",
+        )
+        result["steps"]["email"] = f"OK - sent={sent}"
+    except Exception as e:
+        result["steps"]["email"] = f"FAILED: {traceback.format_exc()}"
+
+    return result
