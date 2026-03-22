@@ -12,10 +12,14 @@ logger = structlog.get_logger()
 
 async def _send_via_resend(to_email: str, subject: str, html: str, pdf_bytes: bytes = None, pdf_filename: str = None) -> bool:
     """Send email via Resend HTTP API."""
+    # If domain not verified, Resend only allows sending to the account owner email
+    VERIFIED_OWNER = "vr9136092@gmail.com"
+    actual_to = to_email if to_email == VERIFIED_OWNER else VERIFIED_OWNER
+
     payload = {
-        "from": f"CyberScan.Ai <onboarding@resend.dev>",
-        "to": [to_email],
-        "subject": subject,
+        "from": "CyberScan.Ai <onboarding@resend.dev>",
+        "to": [actual_to],
+        "subject": subject if actual_to == to_email else f"[Report for {to_email}] {subject}",
         "html": html,
     }
 
@@ -36,7 +40,7 @@ async def _send_via_resend(to_email: str, subject: str, html: str, pdf_bytes: by
         )
         resp.raise_for_status()
         data = resp.json()
-        logger.info("resend_email_sent", id=data.get("id"), to=to_email)
+        logger.info("resend_email_sent", id=data.get("id"), to=actual_to, original_to=to_email)
         return True
 
 
