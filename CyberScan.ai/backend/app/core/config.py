@@ -28,12 +28,14 @@ class Settings(BaseSettings):
     # ── Groq (Free AI) ────────────────────────────────────────────────
     GROQ_API_KEY: str = ""
 
-    # ── Email (SMTP) ─────────────────────────────────────────────────
+    # ── Email (Resend API — HTTP-based, works on Render free tier) ───
+    RESEND_API_KEY: str = ""
+    FROM_EMAIL: str = "onboarding@resend.dev"
+    # Legacy SMTP fields (kept for compatibility, not used)
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 465
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    FROM_EMAIL: str = "noreply@cyberscan.ai"
 
     # ── CORS / Security ───────────────────────────────────────────────
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:80", "https://cyberscan-ai-app.netlify.app"]

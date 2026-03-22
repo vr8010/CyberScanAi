@@ -82,7 +82,7 @@ async def test_email(current_user: User = Depends(get_current_user)):
     """Debug: test email + PDF pipeline and return exact error."""
     import traceback
     from app.core.config import settings
-    result = {"user_email": current_user.email, "smtp_configured": bool(settings.SMTP_USER), "steps": {}}
+    result = {"user_email": current_user.email, "resend_configured": bool(settings.RESEND_API_KEY), "steps": {}}
 
     # Step 1: PDF
     try:
@@ -112,7 +112,7 @@ async def test_email(current_user: User = Depends(get_current_user)):
         result["steps"]["pdf"] = f"FAILED: {traceback.format_exc()}"
         return result
 
-    # Step 2: Email via Resend
+    # Step 2: Email via SMTP port 465
     try:
         from app.services.email_service import send_report_email
         sent = await send_report_email(
