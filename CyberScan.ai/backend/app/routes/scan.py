@@ -20,16 +20,30 @@ router = APIRouter()
 logger = structlog.get_logger()
 
 
+async def _run_scan_background(scan_id: str, user_id: str):
+    """Run scan in background with its own DB session."""
+    from app.core.database import AsyncSessionLocal
+    from sqlalchemy import select
+    from app.models.models import User
+    async with AsyncSessionLocal() as db:
+        user = (await db.execute(select(User).where(User.id == user_id))).scalar_one()
+        service = ScanService(db)
+        try:
+            await service.run_scan(scan_id, user)
+        except Exception as e:
+            logger.error("background_scan_failed", scan_id=scan_id, error=str(e))
+
+
 @router.post("/", response_model=ScanResultResponse)
 async def start_scan(
     request: ScanRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Start a new security scan for the given URL.
-    Runs synchronously (awaits completion) for simplicity.
-    For large scale, move to Celery background tasks.
+    Start a new security scan. Returns immediately with pending status.
+    Poll GET /scan/{id} to get the result.
     """
     service = ScanService(db)
 
@@ -39,10 +53,10 @@ async def start_scan(
     # Create pending scan record
     scan = await service.create_scan(current_user, request)
 
-    # Run scan (this takes 5–15 seconds typically)
-    scan = await service.run_scan(scan.id, current_user)
+    # Run scan in background — avoids Render's 30s request timeout
+    background_tasks.add_task(_run_scan_background, scan.id, current_user.id)
 
-    logger.info("scan_endpoint_complete", scan_id=scan.id, user_id=current_user.id)
+    logger.info("scan_queued", scan_id=scan.id, user_id=current_user.id)
     return ScanResultResponse.model_validate(scan)
 
 

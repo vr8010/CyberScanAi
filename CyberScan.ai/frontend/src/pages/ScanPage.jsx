@@ -23,10 +23,29 @@ export default function ScanPage() {
   const handleScan = async (url) => {
     setIsScanning(true)
     try {
+      // Start scan — returns immediately with pending status
       const { data } = await scanAPI.startScan(url)
+      const scanId = data.id
+
+      // Poll until completed or failed (max 90s)
+      let scan = data
+      const maxAttempts = 30
+      for (let i = 0; i < maxAttempts; i++) {
+        if (scan.status === 'completed' || scan.status === 'failed') break
+        await new Promise(r => setTimeout(r, 3000))
+        const { data: polled } = await scanAPI.getScan(scanId)
+        scan = polled
+      }
+
       await refreshUser()
+
+      if (scan.status === 'failed') {
+        toast.error('Scan failed. Please try again.')
+        return
+      }
+
       toast.success('Scan completed!')
-      navigate(`/dashboard/scans/${data.id}`)
+      navigate(`/dashboard/scans/${scanId}`)
     } catch (err) {
       const detail = err.response?.data?.detail
       if (typeof detail === 'object' && detail?.error === 'scan_limit_exceeded') {
