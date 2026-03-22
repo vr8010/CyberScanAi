@@ -119,7 +119,7 @@ def generate_pdf_report(scan_result) -> bytes:
 
     score_data = [
         [
-            Paragraph(f'<font size="28" color="{risk_color.hexval()}"><b>{risk:.0f}</b></font>', body_style),
+            Paragraph(f'<b>{risk:.0f}</b>', ParagraphStyle("BigScore", parent=body_style, fontSize=28, textColor=risk_color)),
             Paragraph(
                 f"<b>Critical:</b> {scan_result.critical_count} &nbsp;&nbsp;"
                 f"<b>High:</b> {scan_result.high_count} &nbsp;&nbsp;"
@@ -155,11 +155,12 @@ def generate_pdf_report(scan_result) -> bytes:
             sev_color = SEVERITY_COLORS.get(sev, colors.grey)
 
             sev_badge = Table(
-                [[Paragraph(f'<font color="white"><b> {sev.upper()} </b></font>', body_style)]],
+                [[Paragraph(f'<b> {sev.upper()} </b>', body_style)]],
                 colWidths=[1.8 * cm],
             )
             sev_badge.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, -1), sev_color),
+                ("TEXTCOLOR", (0, 0), (-1, -1), colors.white),
                 ("PADDING", (0, 0), (-1, -1), 3),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
             ]))
@@ -188,19 +189,19 @@ def generate_pdf_report(scan_result) -> bytes:
         story.append(Paragraph("Detailed Check Results", h2_style))
 
         table_data = [["Check", "Status", "Detail"]]
+        row_colors = []
         for f in raw_findings:
             status = f.get("status", "")
             status_text = "✓ PASS" if status == "pass" else "✗ FAIL" if status == "fail" else "⚠ WARN"
-            status_color = SUCCESS if status == "pass" else DANGER if status == "fail" else WARNING
-
+            row_colors.append(SUCCESS if status == "pass" else DANGER if status == "fail" else WARNING)
             table_data.append([
                 Paragraph(f.get("check", ""), body_style),
-                Paragraph(f'<font color="{status_color.hexval()}"><b>{status_text}</b></font>', body_style),
+                Paragraph(f'<b>{status_text}</b>', body_style),
                 Paragraph(f.get("detail", ""), body_style),
             ])
 
         findings_table = Table(table_data, colWidths=[5.5 * cm, 2.5 * cm, 9 * cm])
-        findings_table.setStyle(TableStyle([
+        style_cmds = [
             ("BACKGROUND", (0, 0), (-1, 0), PRIMARY),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
@@ -209,7 +210,10 @@ def generate_pdf_report(scan_result) -> bytes:
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT_BG]),
             ("PADDING", (0, 0), (-1, -1), 5),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]))
+        ]
+        for idx, rc in enumerate(row_colors):
+            style_cmds.append(("TEXTCOLOR", (1, idx + 1), (1, idx + 1), rc))
+        findings_table.setStyle(TableStyle(style_cmds))
         story.append(findings_table)
 
     # ── Footer ────────────────────────────────────────────────────────────────
