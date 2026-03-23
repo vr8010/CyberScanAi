@@ -31,11 +31,10 @@ class Settings(BaseSettings):
     # ── Admin Bootstrap ───────────────────────────────────────────────
     BOOTSTRAP_SECRET: str = ""
 
-    # ── Email (Brevo HTTP API — works on Render free tier) ───────────
-    BREVO_API_KEY: str = ""
-    FROM_EMAIL: str = "noreply@cyberscan.ai"
+    # ── Email (Resend HTTP API — works on Render free tier) ──────────
     RESEND_API_KEY: str = ""
-    # Legacy SMTP (not used on Render — ports blocked)
+    FROM_EMAIL: str = "onboarding@resend.dev"
+    BREVO_API_KEY: str = ""
     SMTP_HOST: str = "smtp-relay.brevo.com"
     SMTP_PORT: int = 587
     SMTP_USER: str = ""

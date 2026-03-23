@@ -1,5 +1,6 @@
 """
-Email Service — Brevo HTTP API (SMTP ports blocked on Render free tier).
+Email Service — Resend HTTP API.
+Brevo/SMTP ports blocked on Render free tier; Resend uses HTTPS only.
 """
 
 import httpx
@@ -10,7 +11,7 @@ from app.core.config import settings
 logger = structlog.get_logger()
 
 
-async def _send_brevo(
+async def _send(
     to_email: str,
     to_name: str,
     subject: str,
@@ -18,34 +19,40 @@ async def _send_brevo(
     pdf_bytes: bytes | None = None,
     pdf_filename: str = "report.pdf",
 ) -> bool:
-    payload = {
-        "sender": {"name": "CyberScan.Ai", "email": settings.FROM_EMAIL},
-        "to": [{"email": to_email, "name": to_name or to_email}],
+    """Send via Resend API."""
+    if not settings.RESEND_API_KEY:
+        logger.warning("email_skipped", reason="RESEND_API_KEY not set")
+        return False
+
+    payload: dict = {
+        "from": f"CyberScan.Ai <{settings.FROM_EMAIL}>",
+        "to": [to_email],
         "subject": subject,
-        "htmlContent": html,
+        "html": html,
     }
+
     if pdf_bytes:
-        payload["attachment"] = [{
-            "name": pdf_filename,
+        payload["attachments"] = [{
+            "filename": pdf_filename,
             "content": base64.b64encode(pdf_bytes).decode("utf-8"),
         }]
 
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
-            "https://api.brevo.com/v3/smtp/email",
+            "https://api.resend.com/emails",
             headers={
-                "api-key": settings.BREVO_API_KEY,
+                "Authorization": f"Bearer {settings.RESEND_API_KEY}",
                 "Content-Type": "application/json",
             },
             json=payload,
         )
 
     if resp.status_code in (200, 201):
-        logger.info("brevo_email_sent", to=to_email, status=resp.status_code)
+        logger.info("email_sent", to=to_email, subject=subject)
         return True
-    else:
-        logger.error("brevo_email_failed", to=to_email, status=resp.status_code, body=resp.text)
-        raise RuntimeError(f"Brevo API error {resp.status_code}: {resp.text}")
+
+    logger.error("email_failed", to=to_email, status=resp.status_code, body=resp.text)
+    raise RuntimeError(f"Resend error {resp.status_code}: {resp.text}")
 
 
 async def send_report_email(
@@ -56,15 +63,11 @@ async def send_report_email(
     pdf_bytes: bytes,
     scan_id: str,
 ) -> bool:
-    if not settings.BREVO_API_KEY:
-        logger.warning("email_skipped", reason="BREVO_API_KEY not configured")
+    if not settings.RESEND_API_KEY:
+        logger.warning("email_skipped", reason="RESEND_API_KEY not configured")
         return False
 
-    severity_color = (
-        "#EF4444" if risk_score >= 70
-        else "#F59E0B" if risk_score >= 40
-        else "#10B981"
-    )
+    color = "#EF4444" if risk_score >= 70 else "#F59E0B" if risk_score >= 40 else "#10B981"
 
     html = f"""
     <html><body style="font-family:Arial,sans-serif;background:#F8FAFC;padding:20px;">
@@ -76,10 +79,10 @@ async def send_report_email(
         <p>Your security scan for <strong>{target_url}</strong> is complete.</p>
         <div style="background:#F1F5F9;border-radius:8px;padding:16px;margin:24px 0;text-align:center;">
           <p style="margin:0;font-size:14px;color:#64748B;">Risk Score</p>
-          <p style="margin:4px 0;font-size:48px;font-weight:bold;color:{severity_color};">{risk_score:.0f}</p>
+          <p style="margin:4px 0;font-size:48px;font-weight:bold;color:{color};">{risk_score:.0f}</p>
           <p style="margin:0;font-size:12px;color:#94A3B8;">out of 100</p>
         </div>
-        <p>Full report attached as PDF. View in your
+        <p>Full PDF report is attached. Also view in your
           <a href="{settings.FRONTEND_URL}/dashboard/scans/{scan_id}" style="color:#3B82F6;">dashboard</a>.
         </p>
         <hr style="border:none;border-top:1px solid #E2E8F0;margin:24px 0;">
@@ -88,10 +91,10 @@ async def send_report_email(
     </body></html>
     """
 
-    return await _send_brevo(
+    return await _send(
         to_email=to_email,
         to_name=to_name,
-        subject=f"CyberScan.Ai Report: {target_url}",
+        subject=f"CyberScan.Ai Security Report: {target_url}",
         html=html,
         pdf_bytes=pdf_bytes,
         pdf_filename=f"security-report-{scan_id[:8]}.pdf",
@@ -99,9 +102,8 @@ async def send_report_email(
 
 
 async def send_welcome_email(to_email: str, to_name: str) -> bool:
-    if not settings.BREVO_API_KEY:
+    if not settings.RESEND_API_KEY:
         return False
-
     html = f"""
     <html><body style="font-family:Arial,sans-serif;background:#F8FAFC;padding:20px;">
       <div style="max-width:600px;margin:0 auto;background:white;border-radius:12px;padding:32px;">
@@ -117,13 +119,13 @@ async def send_welcome_email(to_email: str, to_name: str) -> bool:
     </body></html>
     """
     try:
-        return await _send_brevo(to_email=to_email, to_name=to_name,
-                                  subject="Welcome to CyberScan.Ai", html=html)
+        return await _send(to_email=to_email, to_name=to_name,
+                           subject="Welcome to CyberScan.Ai", html=html)
     except Exception as e:
         logger.error("welcome_email_error", error=str(e))
         return False
 
 
-# Admin send-email helper
+# Alias used by admin route
 async def _send_via_resend(to_email: str, subject: str, html: str, **kwargs) -> bool:
-    return await _send_brevo(to_email=to_email, to_name="", subject=subject, html=html)
+    return await _send(to_email=to_email, to_name="", subject=subject, html=html)
