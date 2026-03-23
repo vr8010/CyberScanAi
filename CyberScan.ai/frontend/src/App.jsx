@@ -10,6 +10,8 @@ import ScanPage   from './pages/ScanPage'
 import ScanResult from './pages/ScanResult'
 import Profile    from './pages/Profile'
 import Admin      from './pages/Admin'
+import ScansHistory from './pages/ScansHistory'
+import Pricing    from './pages/Pricing'
 
 // Layout
 import DashboardLayout from './components/dashboard/DashboardLayout'
@@ -35,6 +37,7 @@ export default function App() {
     <Routes>
       {/* Public */}
       <Route path="/"         element={<Landing />} />
+      <Route path="/pricing"  element={<Pricing />} />
       <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
@@ -42,6 +45,7 @@ export default function App() {
       <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
         <Route index             element={<Dashboard />} />
         <Route path="scan"       element={<ScanPage />} />
+        <Route path="scans"      element={<ScansHistory />} />
         <Route path="scans/:id"  element={<ScanResult />} />
         <Route path="profile"    element={<Profile />} />
         <Route path="admin"      element={<AdminRoute><Admin /></AdminRoute>} />

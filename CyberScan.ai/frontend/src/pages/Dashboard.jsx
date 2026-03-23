@@ -92,7 +92,7 @@ export default function Dashboard() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-slate-100">Recent Scans</h2>
-          <Link to="/dashboard/scan" className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
+          <Link to="/dashboard/scans" className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
             View all <ChevronRight size={14} />
           </Link>
         </div>

@@ -89,7 +89,7 @@ export default function Profile() {
       {/* Usage stats */}
       <div className="card p-6">
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Usage Statistics</h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {[
             { label: 'Total Scans',  value: user?.total_scans ?? 0, icon: Shield },
             { label: 'Scans Today',  value: user?.scans_today ?? 0,  icon: Zap },

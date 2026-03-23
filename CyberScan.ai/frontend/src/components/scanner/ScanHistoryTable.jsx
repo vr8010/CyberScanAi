@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ExternalLink, ChevronRight, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { ExternalLink, ChevronRight, Clock, CheckCircle2, XCircle, Loader2, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import clsx from 'clsx'
 
@@ -15,7 +15,7 @@ function StatusIcon({ status }) {
   return <Loader2 size={14} className="text-blue-400 animate-spin" />
 }
 
-export default function ScanHistoryTable({ scans = [], onDelete }) {
+export default function ScanHistoryTable({ scans = [], onDelete, showDelete = false }) {
   if (!scans.length) return (
     <div className="card p-12 text-center">
       <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center mx-auto mb-3">
@@ -84,14 +84,24 @@ export default function ScanHistoryTable({ scans = [], onDelete }) {
                 </div>
               </td>
               <td className="px-3 py-3.5">
-                {scan.status === 'completed' && (
-                  <Link
-                    to={`/dashboard/scans/${scan.id}`}
-                    className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                  >
-                    View <ChevronRight size={12} />
-                  </Link>
-                )}
+                <div className="flex items-center gap-2">
+                  {scan.status === 'completed' && (
+                    <Link
+                      to={`/dashboard/scans/${scan.id}`}
+                      className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      View <ChevronRight size={12} />
+                    </Link>
+                  )}
+                  {showDelete && onDelete && (
+                    <button
+                      onClick={() => onDelete(scan.id)}
+                      className="p-1 rounded hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

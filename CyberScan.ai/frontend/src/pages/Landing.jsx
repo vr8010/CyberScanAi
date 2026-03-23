@@ -34,7 +34,8 @@ export default function Landing() {
             <span className="font-bold text-lg">CyberScan.Ai</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/login"   className="btn-secondary text-sm py-2 px-4">Sign in</Link>
+            <Link to="/pricing"  className="text-sm text-slate-400 hover:text-slate-200 hidden sm:block">Pricing</Link>
+            <Link to="/login"    className="btn-secondary text-sm py-2 px-4">Sign in</Link>
             <Link to="/register" className="btn-primary text-sm py-2 px-4">Get Started Free</Link>
           </div>
         </div>
