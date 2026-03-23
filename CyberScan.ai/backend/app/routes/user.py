@@ -78,3 +78,63 @@ async def get_user_stats(
 
 
 
+
+@router.get("/test-email")
+async def test_email(current_user: User = Depends(get_current_user)):
+    """Debug: test full email+PDF pipeline, returns exact error."""
+    import traceback
+    from app.core.config import settings
+    result = {
+        "user_email": current_user.email,
+        "smtp_host": settings.SMTP_HOST,
+        "smtp_port": settings.SMTP_PORT,
+        "smtp_user": settings.SMTP_USER,
+        "from_email": settings.FROM_EMAIL,
+        "steps": {}
+    }
+
+    # Step 1: PDF
+    try:
+        from app.services.pdf_generator import generate_pdf_report
+        from datetime import datetime, timezone
+
+        class FakeScan:
+            target_url = "https://example.com"
+            risk_score = 42.0
+            overall_severity = "medium"
+            summary = "Test scan"
+            vulnerabilities = []
+            raw_findings = []
+            ssl_valid = True
+            ssl_expiry_days = 90
+            server_header = None
+            response_time_ms = 200
+            critical_count = 0
+            high_count = 0
+            medium_count = 1
+            low_count = 2
+            id = "test-123"
+            created_at = datetime.now(timezone.utc)
+
+        pdf_bytes = generate_pdf_report(FakeScan())
+        result["steps"]["pdf"] = f"OK - {len(pdf_bytes)} bytes"
+    except Exception:
+        result["steps"]["pdf"] = f"FAILED: {traceback.format_exc()}"
+        return result
+
+    # Step 2: SMTP email
+    try:
+        from app.services.email_service import send_report_email
+        sent = await send_report_email(
+            to_email=current_user.email,
+            to_name=current_user.full_name or "",
+            target_url="https://example.com",
+            risk_score=42.0,
+            pdf_bytes=pdf_bytes,
+            scan_id="test-123",
+        )
+        result["steps"]["email"] = f"OK - sent={sent}"
+    except Exception:
+        result["steps"]["email"] = f"FAILED: {traceback.format_exc()}"
+
+    return result
