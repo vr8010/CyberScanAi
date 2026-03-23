@@ -1,62 +1,28 @@
 """
-Email Service — sends security reports via Resend API (HTTP-based, works on Render free tier).
-SMTP ports 465/587 are blocked on Render; Resend uses HTTPS so no port issues.
+Email Service — sends security reports via Brevo SMTP (port 587).
 """
 
-import httpx
-import structlog
+import aiosmtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import base64
+from email.mime.application import MIMEApplication
+import structlog
 
 from app.core.config import settings
 
 logger = structlog.get_logger()
 
 
-async def _send_via_resend(
-    to_email: str,
-    subject: str,
-    html: str,
-    pdf_bytes: bytes | None = None,
-    pdf_filename: str = "report.pdf",
-) -> bool:
-    """Send email via Resend HTTP API."""
-    if not settings.RESEND_API_KEY:
-        logger.warning("email_skipped", reason="RESEND_API_KEY not configured")
-        return False
-
-    payload: dict = {
-        "from": settings.FROM_EMAIL,
-        "to": [to_email],
-        "subject": subject,
-        "html": html,
-    }
-
-    if pdf_bytes:
-        payload["attachments"] = [
-            {
-                "filename": pdf_filename,
-                "content": base64.b64encode(pdf_bytes).decode("utf-8"),
-            }
-        ]
-
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(
-            "https://api.resend.com/emails",
-            headers={
-                "Authorization": f"Bearer {settings.RESEND_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-        )
-
-    if resp.status_code in (200, 201):
-        logger.info("resend_email_sent", to=to_email, status=resp.status_code)
-        return True
-    else:
-        logger.error("resend_email_failed", to=to_email, status=resp.status_code, body=resp.text)
-        raise RuntimeError(f"Resend API error {resp.status_code}: {resp.text}")
+async def _send(msg: MIMEMultipart) -> None:
+    await aiosmtplib.send(
+        msg,
+        hostname=settings.SMTP_HOST,
+        port=settings.SMTP_PORT,
+        username=settings.SMTP_USER,
+        password=settings.SMTP_PASSWORD,
+        start_tls=True,
+        timeout=30,
+    )
 
 
 async def send_report_email(
@@ -67,11 +33,20 @@ async def send_report_email(
     pdf_bytes: bytes,
     scan_id: str,
 ) -> bool:
+    if not settings.SMTP_USER:
+        logger.warning("email_skipped", reason="SMTP not configured")
+        return False
+
     severity_color = (
         "#EF4444" if risk_score >= 70
         else "#F59E0B" if risk_score >= 40
         else "#10B981"
     )
+
+    msg = MIMEMultipart("mixed")
+    msg["Subject"] = f"CyberScan.Ai Report: {target_url}"
+    msg["From"]    = f"CyberScan.Ai <{settings.FROM_EMAIL}>"
+    msg["To"]      = to_email
 
     html = f"""
     <html><body style="font-family:Arial,sans-serif;background:#F8FAFC;padding:20px;">
@@ -94,17 +69,27 @@ async def send_report_email(
       </div>
     </body></html>
     """
+    msg.attach(MIMEText(html, "html"))
 
-    return await _send_via_resend(
-        to_email=to_email,
-        subject=f"CyberScan.Ai Report: {target_url}",
-        html=html,
-        pdf_bytes=pdf_bytes,
-        pdf_filename=f"security-report-{scan_id[:8]}.pdf",
-    )
+    att = MIMEApplication(pdf_bytes, _subtype="pdf")
+    att.add_header("Content-Disposition", "attachment",
+                   filename=f"security-report-{scan_id[:8]}.pdf")
+    msg.attach(att)
+
+    await _send(msg)
+    logger.info("report_email_sent", to=to_email, scan_id=scan_id)
+    return True
 
 
 async def send_welcome_email(to_email: str, to_name: str) -> bool:
+    if not settings.SMTP_USER:
+        return False
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Welcome to CyberScan.Ai"
+    msg["From"]    = f"CyberScan.Ai <{settings.FROM_EMAIL}>"
+    msg["To"]      = to_email
+
     html = f"""
     <html><body style="font-family:Arial,sans-serif;background:#F8FAFC;padding:20px;">
       <div style="max-width:600px;margin:0 auto;background:white;border-radius:12px;padding:32px;">
@@ -119,12 +104,29 @@ async def send_welcome_email(to_email: str, to_name: str) -> bool:
       </div>
     </body></html>
     """
+    msg.attach(MIMEText(html, "html"))
+
     try:
-        return await _send_via_resend(
-            to_email=to_email,
-            subject="Welcome to CyberScan.Ai",
-            html=html,
-        )
+        await _send(msg)
+        return True
     except Exception as e:
         logger.error("welcome_email_error", error=str(e))
         return False
+
+
+# Keep Resend helper for admin send-email route (fallback)
+async def _send_via_resend(to_email: str, subject: str, html: str, **kwargs) -> bool:
+    """Fallback: send via Resend API if RESEND_API_KEY is set."""
+    import httpx, base64
+    if not settings.RESEND_API_KEY:
+        raise RuntimeError("Neither SMTP nor Resend configured")
+    payload = {"from": settings.FROM_EMAIL, "to": [to_email], "subject": subject, "html": html}
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}", "Content-Type": "application/json"},
+            json=payload,
+        )
+    if resp.status_code not in (200, 201):
+        raise RuntimeError(f"Resend error {resp.status_code}: {resp.text}")
+    return True
