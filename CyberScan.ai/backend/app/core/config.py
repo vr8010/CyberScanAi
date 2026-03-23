@@ -52,9 +52,12 @@ class Settings(BaseSettings):
     # ── Frontend ─────────────────────────────────────────────────────
     FRONTEND_URL: str = "http://localhost:3000"
 
-    class Config:
-        env_file = ["../../.env", "../.env", ".env"]
-        case_sensitive = True
+    model_config = {
+        "env_file": ["../../.env", "../.env", ".env"],
+        "env_file_encoding": "utf-8",
+        "case_sensitive": True,
+        "env_nested_delimiter": "__",
+    }
 
 
 settings = Settings()
