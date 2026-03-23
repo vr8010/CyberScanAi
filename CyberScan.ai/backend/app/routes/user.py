@@ -86,9 +86,7 @@ async def test_email(current_user: User = Depends(get_current_user)):
     from app.core.config import settings
     result = {
         "user_email": current_user.email,
-        "smtp_host": settings.SMTP_HOST,
-        "smtp_port": settings.SMTP_PORT,
-        "smtp_user": settings.SMTP_USER,
+        "brevo_configured": bool(settings.BREVO_API_KEY),
         "from_email": settings.FROM_EMAIL,
         "steps": {}
     }
