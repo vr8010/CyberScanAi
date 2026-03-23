@@ -74,17 +74,17 @@ export default function Admin() {
   if (loading) return <div className="flex items-center justify-center h-64"><RefreshCw size={24} className="animate-spin text-blue-400"/></div>
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-2xl font-bold text-slate-100">Admin Panel</h1><p className="text-slate-400 text-sm">Full platform control</p></div>
-        <button onClick={fetchData} className="btn-secondary flex items-center gap-2 text-sm"><RefreshCw size={14}/>Refresh</button>
+      <div className="flex items-center justify-between mb-5 gap-3">
+        <div><h1 className="text-xl md:text-2xl font-bold text-slate-100">Admin Panel</h1><p className="text-slate-400 text-sm">Full platform control</p></div>
+        <button onClick={fetchData} className="btn-secondary flex items-center gap-2 text-sm flex-shrink-0"><RefreshCw size={14}/>Refresh</button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-slate-900 p-1 rounded-lg w-fit border border-slate-800 flex-wrap">
+      <div className="flex gap-1 mb-5 bg-slate-900 p-1 rounded-lg border border-slate-800 overflow-x-auto">
         {TABS.map(t=>(
-          <button key={t} onClick={()=>{setTab(t);setSearch('')}} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${tab===t?'bg-blue-600 text-white':'text-slate-400 hover:text-slate-200'}`}>{t}</button>
+          <button key={t} onClick={()=>{setTab(t);setSearch('')}} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap ${tab===t?'bg-blue-600 text-white':'text-slate-400 hover:text-slate-200'}`}>{t}</button>
         ))}
       </div>
 

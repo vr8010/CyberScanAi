@@ -101,7 +101,7 @@ export default function ScanPage() {
           <Shield size={16} className="text-blue-400" />
           What CyberScan.Ai checks
         </h3>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {[
             ['SSL/TLS Certificate', 'Validity, expiry, configuration'],
             ['Security Headers', 'HSTS, CSP, X-Frame-Options, etc.'],

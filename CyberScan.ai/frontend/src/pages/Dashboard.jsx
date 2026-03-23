@@ -41,22 +41,20 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       {/* ── Header ───────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">
+          <h1 className="text-xl md:text-2xl font-bold text-slate-100">
             {greeting()}, {user?.full_name?.split(' ')[0] || 'there'} 👋
           </h1>
-          <p className="text-slate-400 mt-1 text-sm">
-            Here's your security overview
-          </p>
+          <p className="text-slate-400 mt-1 text-sm">Here's your security overview</p>
         </div>
-        <Link to="/dashboard/scan" className="btn-primary flex items-center gap-2">
+        <Link to="/dashboard/scan" className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap flex-shrink-0">
           <Search size={16} /> New Scan
         </Link>
       </div>
 
-      {/* ── Header ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── Stats ────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard
           label="Total Scans"
           value={loading ? '…' : stats?.total_scans ?? 0}

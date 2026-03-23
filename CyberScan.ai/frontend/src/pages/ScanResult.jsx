@@ -111,43 +111,43 @@ export default function ScanResult() {
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex items-start justify-between gap-3 mb-6">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <Globe size={16} className="text-slate-400 flex-shrink-0" />
-            <h1 className="text-lg font-bold text-slate-100 truncate">{scan.target_url}</h1>
+            <h1 className="text-base md:text-lg font-bold text-slate-100 truncate">{scan.target_url}</h1>
           </div>
           <p className="text-sm text-slate-400">
             Scanned {scan.created_at ? format(new Date(scan.created_at), 'MMM d, yyyy · HH:mm') : '—'}
           </p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
-          <button onClick={loadScan} className="btn-secondary flex items-center gap-2 text-sm py-2">
+          <button onClick={loadScan} className="btn-secondary flex items-center gap-2 text-sm py-2 px-3">
             <RefreshCw size={14} />
           </button>
           <button
             onClick={handleDownloadPDF}
             disabled={downloading || scan.status !== 'completed'}
-            className="btn-secondary flex items-center gap-2 text-sm py-2"
+            className="btn-secondary flex items-center gap-2 text-sm py-2 px-3"
           >
             {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-            PDF
+            <span className="hidden sm:inline">PDF</span>
           </button>
         </div>
       </div>
 
       {/* Score + Meta grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="card p-4 flex items-center justify-center">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="card p-4 flex items-center justify-center col-span-2 md:col-span-1">
           <RiskScoreRing score={scan.risk_score ?? 0} size="md" />
         </div>
-        <MetaBadge icon={Lock}  label="SSL Certificate" value={scan.ssl_valid ? `Valid · ${scan.ssl_expiry_days}d left` : 'Invalid / Missing'} ok={scan.ssl_valid} />
-        <MetaBadge icon={Clock} label="Response Time"   value={scan.response_time_ms ? `${scan.response_time_ms}ms` : 'N/A'} ok={scan.response_time_ms < 1000} />
-        <MetaBadge icon={Shield} label="Server Header"  value={scan.server_header || 'Hidden ✓'} ok={!scan.server_header} />
+        <MetaBadge icon={Lock}   label="SSL Certificate" value={scan.ssl_valid ? `Valid · ${scan.ssl_expiry_days}d left` : 'Invalid / Missing'} ok={scan.ssl_valid} />
+        <MetaBadge icon={Clock}  label="Response Time"   value={scan.response_time_ms ? `${scan.response_time_ms}ms` : 'N/A'} ok={scan.response_time_ms < 1000} />
+        <MetaBadge icon={Shield} label="Server Header"   value={scan.server_header || 'Hidden ✓'} ok={!scan.server_header} />
       </div>
 
       {/* Severity counts */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-4 gap-2 md:gap-3 mb-6">
         {[
           { label: 'Critical', count: scan.critical_count, cls: 'severity-critical' },
           { label: 'High',     count: scan.high_count,     cls: 'severity-high' },
@@ -162,13 +162,13 @@ export default function ScanResult() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 mb-4">
+      <div className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 mb-4 overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={clsx(
-              'flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all',
+              'flex-1 min-w-max px-3 py-2 text-xs md:text-sm font-medium rounded-lg transition-all whitespace-nowrap',
               activeTab === tab.id
                 ? 'bg-blue-600 text-white shadow'
                 : 'text-slate-400 hover:text-slate-200'
