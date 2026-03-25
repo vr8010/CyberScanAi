@@ -83,12 +83,7 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Demo hint */}
-          <div className="mt-4 p-3 bg-slate-800 rounded-lg border border-slate-700">
-            <p className="text-xs text-slate-400 text-center">
-              <span className="text-slate-500">Demo:</span> demo@securescout.io / demo1234
-            </p>
-          </div>
+
         </div>
 
         <p className="text-center text-sm text-slate-500 mt-5">
