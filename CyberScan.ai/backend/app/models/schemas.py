@@ -191,3 +191,53 @@ class AdminStats(BaseModel):
 
 # Update forward reference
 Token.model_rebuild()
+
+
+# ── Scheduled Scan ────────────────────────────────────────────────────────────
+
+class ScheduledScanCreate(BaseModel):
+    url: str
+    frequency: str          # daily | weekly | monthly
+    day_of_week: Optional[str] = None   # mon|tue|wed|thu|fri|sat|sun
+    hour: int = Field(8, ge=0, le=23)
+    email_notify: bool = True
+
+    @validator("frequency")
+    def validate_frequency(cls, v):
+        if v not in ("daily", "weekly", "monthly"):
+            raise ValueError("frequency must be daily, weekly, or monthly")
+        return v
+
+    @validator("day_of_week")
+    def validate_day(cls, v, values):
+        if values.get("frequency") == "weekly":
+            valid = ("mon","tue","wed","thu","fri","sat","sun")
+            if v not in valid:
+                raise ValueError(f"day_of_week must be one of {valid}")
+        return v
+
+
+class ScheduledScanUpdate(BaseModel):
+    url: Optional[str] = None
+    frequency: Optional[str] = None
+    day_of_week: Optional[str] = None
+    hour: Optional[int] = Field(None, ge=0, le=23)
+    email_notify: Optional[bool] = None
+    is_active: Optional[bool] = None
+
+
+class ScheduledScanResponse(BaseModel):
+    id: str
+    url: str
+    frequency: str
+    day_of_week: Optional[str]
+    hour: int
+    email_notify: bool
+    is_active: bool
+    last_run_at: Optional[datetime]
+    next_run_at: Optional[datetime]
+    run_count: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

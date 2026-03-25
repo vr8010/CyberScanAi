@@ -15,7 +15,7 @@ import time
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.routes import auth, scan, user, admin
+from app.routes import auth, scan, user, admin, schedule
 from app.middleware.rate_limit import RateLimitMiddleware
 
 # Configure structured logging
@@ -81,7 +81,7 @@ async def log_requests(request: Request, call_next):
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database tables on startup."""
+    """Initialize database tables and scheduler on startup."""
     logger.info("startup", message="CyberScan.Ai API starting up...")
     try:
         async with engine.begin() as conn:
@@ -90,10 +90,21 @@ async def startup_event():
     except Exception as e:
         logger.warning("startup", message=f"Database not available: {e}. API will start but DB operations will fail.")
 
+    # Start APScheduler and load saved schedules
+    from app.services.scheduler import scheduler, load_all_schedules
+    scheduler.start()
+    try:
+        await load_all_schedules()
+    except Exception as e:
+        logger.warning("startup", message=f"Could not load schedules: {e}")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown."""
+    from app.services.scheduler import scheduler
+    if scheduler.running:
+        scheduler.shutdown(wait=False)
     logger.info("shutdown", message="CyberScan.Ai API shutting down...")
 
 
@@ -108,10 +119,11 @@ async def health_check():
 
 
 # Include routers
-app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(scan.router, prefix="/api/scan", tags=["Scanner"])
-app.include_router(user.router, prefix="/api/user", tags=["User"])
-app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(auth.router,     prefix="/api/auth",     tags=["Authentication"])
+app.include_router(scan.router,     prefix="/api/scan",     tags=["Scanner"])
+app.include_router(user.router,     prefix="/api/user",     tags=["User"])
+app.include_router(admin.router,    prefix="/api/admin",    tags=["Admin"])
+app.include_router(schedule.router, prefix="/api/schedule", tags=["Schedule"])
 
 
 @app.exception_handler(Exception)

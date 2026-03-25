@@ -54,3 +54,11 @@ export const userAPI = {
   getStats:      ()    => api.get('/user/stats'),
   updateProfile: (data) => api.patch('/user/profile', data),
 }
+
+// ── Schedule API ──────────────────────────────────────────────────────────────
+export const scheduleAPI = {
+  list:   ()         => api.get('/schedule/'),
+  create: (data)     => api.post('/schedule/', data),
+  update: (id, data) => api.patch(`/schedule/${id}`, data),
+  delete: (id)       => api.delete(`/schedule/${id}`),
+}

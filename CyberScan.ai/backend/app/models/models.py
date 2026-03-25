@@ -159,3 +159,29 @@ class PaymentLog(Base):
     payload = Column(JSON, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# ── ScheduledScan ─────────────────────────────────────────────────────────────
+
+class ScheduledScan(Base):
+    __tablename__ = "scheduled_scans"
+
+    id         = Column(String, primary_key=True, default=generate_uuid)
+    user_id    = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    url        = Column(String, nullable=False)
+    frequency  = Column(String, nullable=False)   # daily | weekly | monthly
+    day_of_week = Column(String, nullable=True)   # mon-sun (weekly only)
+    hour       = Column(Integer, nullable=False, default=8)  # 0-23 UTC
+
+    email_notify = Column(Boolean, default=True)
+    is_active    = Column(Boolean, default=True)
+
+    last_run_at  = Column(DateTime(timezone=True), nullable=True)
+    next_run_at  = Column(DateTime(timezone=True), nullable=True)
+    run_count    = Column(Integer, default=0)
+
+    created_at   = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
+
+    user = relationship("User", backref="scheduled_scans")

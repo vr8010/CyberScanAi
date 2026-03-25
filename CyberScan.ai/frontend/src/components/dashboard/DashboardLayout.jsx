@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { Shield, LayoutDashboard, Search, User, LogOut, Zap, ShieldAlert, Menu, X, History } from 'lucide-react'
+import { Shield, LayoutDashboard, Search, User, LogOut, Zap, ShieldAlert, Menu, X, History, Clock } from 'lucide-react'
 import useAuthStore from '../../store/authStore'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 const navItems = [
-  { to: '/dashboard',         label: 'Dashboard',      icon: LayoutDashboard, end: true },
-  { to: '/dashboard/scan',    label: 'New Scan',        icon: Search },
-  { to: '/dashboard/scans',   label: 'Scan History',    icon: History },
-  { to: '/dashboard/profile', label: 'Profile',         icon: User },
+  { to: '/dashboard',          label: 'Dashboard',      icon: LayoutDashboard, end: true },
+  { to: '/dashboard/scan',     label: 'New Scan',        icon: Search },
+  { to: '/dashboard/scans',    label: 'Scan History',    icon: History },
+  { to: '/dashboard/schedule', label: 'Scheduled Scans', icon: Clock },
+  { to: '/dashboard/profile',  label: 'Profile',         icon: User },
 ]
 
 export default function DashboardLayout() {

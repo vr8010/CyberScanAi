@@ -12,6 +12,7 @@ import Profile    from './pages/Profile'
 import Admin      from './pages/Admin'
 import ScansHistory from './pages/ScansHistory'
 import Pricing    from './pages/Pricing'
+import SchedulePage from './pages/SchedulePage'
 
 // Layout
 import DashboardLayout from './components/dashboard/DashboardLayout'
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="scan"       element={<ScanPage />} />
         <Route path="scans"      element={<ScansHistory />} />
         <Route path="scans/:id"  element={<ScanResult />} />
+        <Route path="schedule"   element={<SchedulePage />} />
         <Route path="profile"    element={<Profile />} />
         <Route path="admin"      element={<AdminRoute><Admin /></AdminRoute>} />
       </Route>
