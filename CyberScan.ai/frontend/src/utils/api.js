@@ -65,5 +65,8 @@ export const scheduleAPI = {
 
 // ── Attack Surface API ────────────────────────────────────────────────────────
 export const attackSurfaceAPI = {
-  discover: (url) => api.post('/attack-surface/', { url }),
+  discover:      (url) => api.post('/attack-surface/', { url }),
+  getHistory:    ()    => api.get('/attack-surface/history'),
+  getHistoryItem:(id)  => api.get(`/attack-surface/history/${id}`),
+  deleteHistory: (id)  => api.delete(`/attack-surface/history/${id}`),
 }

@@ -161,7 +161,19 @@ class PaymentLog(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-# ── ScheduledScan ─────────────────────────────────────────────────────────────
+# ── AttackSurfaceResult ───────────────────────────────────────────────────────
+
+class AttackSurfaceResult(Base):
+    __tablename__ = "attack_surface_results"
+
+    id         = Column(String, primary_key=True, default=generate_uuid)
+    user_id    = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    domain     = Column(String, nullable=False)
+    url        = Column(String, nullable=False)
+    result     = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", backref="attack_surface_results")
 
 class ScheduledScan(Base):
     __tablename__ = "scheduled_scans"
