@@ -62,3 +62,8 @@ export const scheduleAPI = {
   update: (id, data) => api.patch(`/schedule/${id}`, data),
   delete: (id)       => api.delete(`/schedule/${id}`),
 }
+
+// ── Attack Surface API ────────────────────────────────────────────────────────
+export const attackSurfaceAPI = {
+  discover: (url) => api.post('/attack-surface/', { url }),
+}

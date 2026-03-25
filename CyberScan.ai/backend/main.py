@@ -15,7 +15,7 @@ import time
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.routes import auth, scan, user, admin, schedule
+from app.routes import auth, scan, user, admin, schedule, attack_surface
 from app.middleware.rate_limit import RateLimitMiddleware
 
 # Configure structured logging
@@ -119,11 +119,12 @@ async def health_check():
 
 
 # Include routers
-app.include_router(auth.router,     prefix="/api/auth",     tags=["Authentication"])
-app.include_router(scan.router,     prefix="/api/scan",     tags=["Scanner"])
-app.include_router(user.router,     prefix="/api/user",     tags=["User"])
-app.include_router(admin.router,    prefix="/api/admin",    tags=["Admin"])
-app.include_router(schedule.router, prefix="/api/schedule", tags=["Schedule"])
+app.include_router(auth.router,            prefix="/api/auth",           tags=["Authentication"])
+app.include_router(scan.router,            prefix="/api/scan",           tags=["Scanner"])
+app.include_router(user.router,            prefix="/api/user",           tags=["User"])
+app.include_router(admin.router,           prefix="/api/admin",          tags=["Admin"])
+app.include_router(schedule.router,        prefix="/api/schedule",       tags=["Schedule"])
+app.include_router(attack_surface.router,  prefix="/api/attack-surface", tags=["Attack Surface"])
 
 
 @app.exception_handler(Exception)
