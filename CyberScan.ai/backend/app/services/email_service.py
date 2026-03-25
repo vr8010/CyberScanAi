@@ -1,6 +1,6 @@
 """
-Email Service — Resend HTTP API.
-Brevo/SMTP ports blocked on Render free tier; Resend uses HTTPS only.
+Email Service — Brevo HTTP API (works on Render free tier, no SMTP ports needed).
+Sends to ANY email address using verified Brevo sender.
 """
 
 import httpx
@@ -11,7 +11,7 @@ from app.core.config import settings
 logger = structlog.get_logger()
 
 
-async def _send(
+async def _send_brevo(
     to_email: str,
     to_name: str,
     subject: str,
@@ -19,40 +19,39 @@ async def _send(
     pdf_bytes: bytes | None = None,
     pdf_filename: str = "report.pdf",
 ) -> bool:
-    """Send via Resend API."""
-    if not settings.RESEND_API_KEY:
-        logger.warning("email_skipped", reason="RESEND_API_KEY not set")
+    if not settings.BREVO_API_KEY:
+        logger.warning("email_skipped", reason="BREVO_API_KEY not set")
         return False
 
     payload: dict = {
-        "from": f"CyberScan.Ai <{settings.FROM_EMAIL}>",
-        "to": [to_email],
+        "sender": {"name": "CyberScan.Ai", "email": settings.FROM_EMAIL},
+        "to": [{"email": to_email, "name": to_name or to_email}],
         "subject": subject,
-        "html": html,
+        "htmlContent": html,
     }
 
     if pdf_bytes:
-        payload["attachments"] = [{
-            "filename": pdf_filename,
+        payload["attachment"] = [{
+            "name": pdf_filename,
             "content": base64.b64encode(pdf_bytes).decode("utf-8"),
         }]
 
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
-            "https://api.resend.com/emails",
+            "https://api.brevo.com/v3/smtp/email",
             headers={
-                "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                "api-key": settings.BREVO_API_KEY,
                 "Content-Type": "application/json",
             },
             json=payload,
         )
 
     if resp.status_code in (200, 201):
-        logger.info("email_sent", to=to_email, subject=subject)
+        logger.info("brevo_sent", to=to_email, subject=subject)
         return True
 
-    logger.error("email_failed", to=to_email, status=resp.status_code, body=resp.text)
-    raise RuntimeError(f"Resend error {resp.status_code}: {resp.text}")
+    logger.error("brevo_failed", to=to_email, status=resp.status_code, body=resp.text)
+    raise RuntimeError(f"Brevo error {resp.status_code}: {resp.text}")
 
 
 async def send_report_email(
@@ -63,8 +62,8 @@ async def send_report_email(
     pdf_bytes: bytes,
     scan_id: str,
 ) -> bool:
-    if not settings.RESEND_API_KEY:
-        logger.warning("email_skipped", reason="RESEND_API_KEY not configured")
+    if not settings.BREVO_API_KEY:
+        logger.warning("email_skipped", reason="BREVO_API_KEY not configured")
         return False
 
     color = "#EF4444" if risk_score >= 70 else "#F59E0B" if risk_score >= 40 else "#10B981"
@@ -91,7 +90,7 @@ async def send_report_email(
     </body></html>
     """
 
-    return await _send(
+    return await _send_brevo(
         to_email=to_email,
         to_name=to_name,
         subject=f"CyberScan.Ai Security Report: {target_url}",
@@ -102,7 +101,7 @@ async def send_report_email(
 
 
 async def send_welcome_email(to_email: str, to_name: str) -> bool:
-    if not settings.RESEND_API_KEY:
+    if not settings.BREVO_API_KEY:
         return False
     html = f"""
     <html><body style="font-family:Arial,sans-serif;background:#F8FAFC;padding:20px;">
@@ -119,13 +118,13 @@ async def send_welcome_email(to_email: str, to_name: str) -> bool:
     </body></html>
     """
     try:
-        return await _send(to_email=to_email, to_name=to_name,
-                           subject="Welcome to CyberScan.Ai", html=html)
+        return await _send_brevo(to_email=to_email, to_name=to_name,
+                                  subject="Welcome to CyberScan.Ai", html=html)
     except Exception as e:
         logger.error("welcome_email_error", error=str(e))
         return False
 
 
-# Alias used by admin route
+# Admin route alias
 async def _send_via_resend(to_email: str, subject: str, html: str, **kwargs) -> bool:
-    return await _send(to_email=to_email, to_name="", subject=subject, html=html)
+    return await _send_brevo(to_email=to_email, to_name="", subject=subject, html=html)
